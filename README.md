@@ -1,168 +1,67 @@
 # ShortStack API
 
-A high-performance URL shortening API built with TypeScript, Express, and SQLite.
+A URL-shortening API built with TypeScript, Express, and SQLite. Registered users can create short links, choose aliases, set expiration dates, view click analytics, generate QR codes, and deactivate or delete links.
 
-## Features
+## What it does
 
-- **URL Shortening**: Generate short, unique codes for long URLs
-- **User Authentication**: Secure user registration and authentication
-- **User Management**: Manage user profiles and permissions
-- **Analytics**: Track and analyze click statistics on shortened URLs
-- **Caching**: LRU cache for optimized performance
-- **Database Migrations**: SQL-based database versioning and management
-- **Comprehensive Testing**: Unit and integration tests with Vitest
+- Creates short URLs with generated codes or a custom alias.
+- Redirects visitors through `GET /:code` and records clicks.
+- Reports clicks over 24 hours, 7 days, or 30 days.
+- Generates a QR code for a link.
+- Uses JWT authentication, request validation, rate limiting, and an LRU cache.
+- Applies the SQL migrations in `src/db/migrations/` when the database starts.
 
-## Tech Stack
+**Stack:** Node.js 22.5+, TypeScript, Express 5, SQLite (`node:sqlite`), Zod, Vitest.
 
-- **Runtime**: Node.js
-- **Language**: TypeScript
-- **Framework**: Express.js
-- **Database**: SQLite with migrations
-- **Testing**: Vitest
-- **Caching**: Custom LRU Cache implementation
+## Run locally
 
-## Project Structure
-
-```
-src/
-├── app.ts              # Express application setup
-├── server.ts           # Server entry point
-├── cache/              # Caching utilities
-├── config/             # Configuration management
-├── db/                 # Database setup and migrations
-├── middleware/         # Custom middleware
-├── modules/            # Feature modules
-│   ├── analytics/      # Click tracking and analytics
-│   ├── auth/           # Authentication
-│   ├── links/          # URL shortening and management
-│   └── users/          # User management
-├── types/              # TypeScript type definitions
-└── utils/              # Utility functions
-
-tests/
-├── unit/               # Unit tests
-└── integration/        # Integration tests
-```
-
-## Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd shortstack-api
-```
-
-2. Install dependencies:
-```bash
+git clone https://github.com/Nwobi/Shortstack-API.git
+cd Shortstack-API
 npm install
-```
-
-3. Set up environment variables:
-```bash
 cp .env.example .env
-```
-
-4. Run database migrations:
-```bash
-npm run migrate
-```
-
-## Getting Started
-
-### Development
-
-Start the development server:
-```bash
 npm run dev
 ```
 
-The API will be available at `http://localhost:3000` (or your configured port).
+Replace `JWT_SECRET` in `.env` with a long random secret before exposing the API. The development server uses `http://localhost:3000` by default. `.env` and local database files are ignored by Git.
 
-### Production
+For a production build:
 
-Build and start the production server:
 ```bash
 npm run build
 npm start
 ```
 
-## Testing
+The build copies the SQL migration files to `dist/db/migrations/`; migrations run automatically at startup.
 
-Run all tests:
-```bash
-npm test
-```
+## Routes
 
-Run tests in watch mode:
-```bash
-npm run test:watch
-```
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Health check |
+| POST | `/api/auth/register` | Create an account |
+| POST | `/api/auth/login` | Receive an authentication token |
+| GET | `/api/auth/me` | Read the signed-in user |
+| POST | `/api/links` | Create a short link |
+| GET | `/api/links` | List the signed-in user's links |
+| GET | `/api/links/:id/analytics` | Click analytics; optional `period=24h|7d|30d` |
+| GET | `/api/links/:id/qr` | QR code data URL |
+| PATCH | `/api/links/:id/deactivate` | Disable a link and keep its analytics |
+| DELETE | `/api/links/:id` | Permanently remove a link |
+| GET | `/:code` | Redirect to the target URL |
 
-Run only unit tests:
-```bash
-npm run test:unit
-```
-
-Run only integration tests:
-```bash
-npm run test:integration
-```
-
-## API Endpoints
-
-### Authentication
-- `POST /auth/register` - Register a new user
-- `POST /auth/login` - User login
-- `POST /auth/logout` - User logout
-
-### Links
-- `POST /links` - Create a short URL
-- `GET /links/:shortCode` - Redirect to original URL
-- `GET /links/:shortCode/stats` - Get analytics for a URL
-- `PUT /links/:shortCode` - Update a short URL
-- `DELETE /links/:shortCode` - Delete a short URL
-
-### Users
-- `GET /users/profile` - Get user profile
-- `PUT /users/profile` - Update user profile
-- `DELETE /users/:userId` - Delete user account
+The `/api/links` routes and `/api/auth/me` require a bearer token returned by registration or login. The root `/:code` route is public.
 
 ## Configuration
 
-Configuration is managed through environment variables. Key variables:
+Copy `.env.example` to `.env`. `DB_PATH` sets the SQLite file location; `BASE_URL` is used when constructing short links. `PORT`, `JWT_EXPIRES_IN`, `CACHE_MAX_SIZE`, `LOG_LEVEL`, and `RATE_LIMIT_MAX` can also be changed there. Never commit your real `.env`.
 
-- `PORT` - Server port (default: 3000)
-- `NODE_ENV` - Environment (development/production)
-- `DATABASE_URL` - Database connection string
-- `JWT_SECRET` - JWT secret for authentication
+## Checks
 
-## Performance Optimization
+```bash
+npm test
+npm run test:coverage
+npm run lint
+```
 
-The API includes several performance optimizations:
-
-- **LRU Cache**: Caches frequently accessed URLs to reduce database queries
-- **Connection Pooling**: Efficient database connection management
-- **Response Compression**: Gzip compression for API responses
-
-## Database Migrations
-
-Migrations are located in `src/db/migrations/`. To add a new migration:
-
-1. Create a new SQL file with format `XXX_description.sql`
-2. Add your migration SQL
-3. Run `npm run migrate` to apply
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Commit your changes: `git commit -am 'Add new feature'`
-3. Push to the branch: `git push origin feature/your-feature`
-4. Submit a pull request
-
-## License
-
-MIT
-
-## Support
-
-For issues and questions, please open an issue on the repository.
+The tests use Vitest. Issues and contributions are welcome through this repository.
